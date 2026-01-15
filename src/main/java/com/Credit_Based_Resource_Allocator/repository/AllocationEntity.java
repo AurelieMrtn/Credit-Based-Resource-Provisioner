@@ -1,8 +1,8 @@
 package com.Credit_Based_Resource_Allocator.repository;
 
 
-import com.Credit_Based_Resource_Allocator.service.RequestStatus;
-import com.Credit_Based_Resource_Allocator.service.RequestSide;
+import com.Credit_Based_Resource_Allocator.AllocationStatus;
+import com.Credit_Based_Resource_Allocator.AllocationSide;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -10,28 +10,28 @@ import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
 @Entity
-public class AllocationRequestEntity {
+public class AllocationEntity {
     @Id
     @GeneratedValue
     private Long id;
 
     private String accountId;
     private String resourceId;
-    private RequestStatus status;
-    private RequestSide side;
+    private AllocationStatus status;
+    private AllocationSide side;
     private BigDecimal quantity;
-    private BigDecimal price;
+    private BigDecimal cost;
 
-    public AllocationRequestEntity(String accountId, String resourceId, RequestStatus orderStatus, RequestSide side, BigDecimal quantity, BigDecimal price) {
+    public AllocationEntity(String accountId, String resourceId, AllocationStatus orderStatus, AllocationSide side, BigDecimal quantity, BigDecimal cost) {
         this.accountId = accountId;
         this.resourceId = resourceId;
         this.status = orderStatus;
         this.side = side;
         this.quantity = quantity;
-        this.price = price;
+        this.cost = cost;
     }
 
-    public AllocationRequestEntity() {
+    public AllocationEntity() {
     }
 
     public Long getId() {
@@ -44,15 +44,15 @@ public class AllocationRequestEntity {
         return resourceId;
     }
 
-    public RequestStatus getStatus() {
+    public AllocationStatus getStatus() {
         return status;
     }
 
-    public void setStatus(RequestStatus status) {
+    public void setStatus(AllocationStatus status) {
         this.status = status;
     }
 
-    public RequestSide getSide() {
+    public AllocationSide getSide() {
         return side;
     }
 
@@ -60,7 +60,7 @@ public class AllocationRequestEntity {
         return quantity;
     }
 
-    public BigDecimal getPrice() {
-        return price;
+    public BigDecimal getCost() {
+        return cost;
     }
 }
