@@ -3,6 +3,8 @@ package com.Credit_Based_Resource_Allocator.service;
 import com.Credit_Based_Resource_Allocator.AllocationRequest;
 import com.Credit_Based_Resource_Allocator.AllocationSide;
 import com.Credit_Based_Resource_Allocator.AllocationStatus;
+import com.Credit_Based_Resource_Allocator.exception.AllocationNotFoundException;
+import com.Credit_Based_Resource_Allocator.exception.BusinessException;
 import com.Credit_Based_Resource_Allocator.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,7 +57,7 @@ public class AllocatorService {
      * @return the allocation entity associated with the id if it exists, otherwise throws an error.
      */
     public AllocationEntity getAllocation(Long allocationId) {
-        return allocationRepository.findById(allocationId).orElseThrow(() -> new IllegalArgumentException("Order not found"));
+        return allocationRepository.findById(allocationId).orElseThrow(() -> new AllocationNotFoundException("Order not found"));
     }
 
     /**
@@ -65,7 +67,7 @@ public class AllocatorService {
      */
     public AllocationEntity cancelAllocation(Long allocationId) {
         AllocationEntity allocation = getAllocation(allocationId);
-        if (allocation.getStatus() != AllocationStatus.CREATED) throw new IllegalArgumentException("Order cannot be cancelled");
+        if (allocation.getStatus() != AllocationStatus.CREATED) throw new BusinessException("Order cannot be cancelled");
 
         BigDecimal price = costsDataService.getCost(allocation.getResourceId());
         BigDecimal quantity = allocation.getQuantity();
@@ -79,11 +81,11 @@ public class AllocatorService {
      * This method is used to avoid code duplication, it allows to update both accountsCredits and allocatedResources repositories while creating or cancelling an allocation.
      * @param accountId the account id.
      * @param resourceId the resource id.
-     * @param side whether it's a BUY or SELL order.
-     * @param quantity the quantity of the order.
-     * @param price the price of the order.
-     * @param isCancelling whether the order is being created or canceled. If true then reverts the changes.
-     * @throws IllegalArgumentException if the portfolio is not found, the buying power is insufficient, or the inventory doesn't have the required stocks quantity.
+     * @param side whether it's a ALLOCATE or RELEASE allocation.
+     * @param quantity the quantity of the allocation.
+     * @param price the cost of the allocation.
+     * @param isCancelling whether the allocation is being created or canceled. If true then reverts the changes.
+     * @throws BusinessException if the account is not found, the amount of credits is insufficient, or the resources doesn't include the required resource quantity.
      */
     private void updatePortfolio(String accountId, String resourceId, AllocationSide side, BigDecimal quantity, BigDecimal price, boolean isCancelling) {
         BigDecimal totalPrice = price.multiply(quantity);
@@ -94,12 +96,12 @@ public class AllocatorService {
                 .orElse(new AllocatedResourcesEntity(accountId, resourceId, BigDecimal.ZERO));
 
         if ((side == AllocationSide.ALLOCATE && !isCancelling) || (side == AllocationSide.RELEASE && isCancelling)) {
-            if (accountCredits.getAmount().compareTo(totalPrice) < 0 ) throw new IllegalArgumentException("Insufficient buying power");
+            if (accountCredits.getAmount().compareTo(totalPrice) < 0 ) throw new BusinessException("Insufficient buying power");
             accountCredits = new AccountCreditsEntity(accountCredits.getAccountId(), accountCredits.getAmount().subtract(totalPrice));
             allocatedResources = new AllocatedResourcesEntity(allocatedResources.getAccountId(), allocatedResources.getResourceId(), allocatedResources.getQuantity().add(quantity));
         }
         else if ((side == AllocationSide.RELEASE && !isCancelling) || (side == AllocationSide.ALLOCATE && isCancelling)) {
-            if (allocatedResources.getQuantity().compareTo(quantity) < 0) throw new IllegalArgumentException("Insufficient inventory");
+            if (allocatedResources.getQuantity().compareTo(quantity) < 0) throw new BusinessException("Insufficient inventory");
             accountCredits = new AccountCreditsEntity(accountCredits.getAccountId(), accountCredits.getAmount().add(totalPrice));
             allocatedResources = new AllocatedResourcesEntity(allocatedResources.getAccountId(), allocatedResources.getResourceId(), allocatedResources.getQuantity().subtract(quantity));
         }
