@@ -92,7 +92,7 @@ public class AllocatorService {
 
         AccountCreditsEntity accountCredits = accountCreditsRepository.findById(accountId)
                 .orElse(new AccountCreditsEntity(accountId, new BigDecimal("5000.00")));
-        AllocatedResourcesEntity allocatedResources = allocatedResourcesRepository.findById(new AllocatedRessourcesEntityId(accountId, resourceId))
+        AllocatedResourcesEntity allocatedResources = allocatedResourcesRepository.findById(new AllocatedResourcesEntityId(accountId, resourceId))
                 .orElse(new AllocatedResourcesEntity(accountId, resourceId, BigDecimal.ZERO));
 
         if ((side == AllocationSide.ALLOCATE && !isCancelling) || (side == AllocationSide.RELEASE && isCancelling)) {

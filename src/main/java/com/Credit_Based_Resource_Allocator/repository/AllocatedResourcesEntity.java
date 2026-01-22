@@ -7,7 +7,7 @@ import jakarta.persistence.IdClass;
 import java.math.BigDecimal;
 
 @Entity
-@IdClass(AllocatedRessourcesEntityId.class)
+@IdClass(AllocatedResourcesEntityId.class)
 public class AllocatedResourcesEntity {
     @Id
     private String accountId;
