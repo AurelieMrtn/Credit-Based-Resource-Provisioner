@@ -1,8 +1,10 @@
 package com.Credit_Based_Resource_Allocator.api;
 
+import com.Credit_Based_Resource_Allocator.AllocationStatus;
 import com.Credit_Based_Resource_Allocator.repository.*;
 import com.Credit_Based_Resource_Allocator.service.CostsDataService;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +79,7 @@ class AllocatorControllerTest {
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
 	}
 
-	// Test RELEASE Allocation
+	// Test create RELEASE allocation
 
 	@Test
 	public void shouldGetAllocationById() throws Exception {
@@ -95,9 +97,39 @@ class AllocatorControllerTest {
 		assertEquals(creationResponse, response);
 	}
 
+	@Test
+	public void shouldCancelAllocateAllocation() throws Exception {
+		Map<String, String> object = new HashMap<>();
+		object.put("accountId", "account-id-1");
+		object.put("resourceId", "GPU-A100");
+		object.put("side", "ALLOCATE");
+		object.put("quantity", "10.00");
+
+		String creationResponse = createAllocation(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+
+		cancelAllocation(allocationId);
+
+		AllocationEntity allocationEntity = allocationRepository.findById(allocationId).orElse(null);
+		assert allocationEntity != null;
+		Assertions.assertEquals(AllocationStatus.CANCELLED, allocationEntity.getStatus());
+
+		verifyResources("account-id-1", "GPU-A100", new BigDecimal("0.00"));
+		verifyCredit("account-id-1", new BigDecimal("5000.00"));
+	}
+
+	// Test cancel RELEASE allocation
+
 	private ResultActions createAllocation(String allocationRequest) throws Exception {
 		MockHttpServletRequestBuilder content = post("/allocation")
 				.content(allocationRequest)
+				.contentType(MediaType.APPLICATION_JSON);
+
+		return mvc.perform(content);
+	}
+
+	private ResultActions cancelAllocation(long allocationId) throws Exception {
+		MockHttpServletRequestBuilder content = put("/allocation/" + allocationId)
 				.contentType(MediaType.APPLICATION_JSON);
 
 		return mvc.perform(content);
@@ -127,4 +159,5 @@ class AllocatorControllerTest {
 				.as("Credits of account %s should equal %s.", accountId, expectedAmount)
 				.isEqualByComparingTo(expectedAmount);
 	}
+
 }
