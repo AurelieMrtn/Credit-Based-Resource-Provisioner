@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,9 +77,34 @@ class AllocatorControllerTest {
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
 	}
 
+	// Test RELEASE Allocation
+
+	@Test
+	public void shouldGetAllocationById() throws Exception {
+		Map<String, String> object = new HashMap<>();
+		object.put("accountId", "account-id-1");
+		object.put("resourceId", "GPU-A100");
+		object.put("side", "ALLOCATE");
+		object.put("quantity", "10.00");
+
+		String creationResponse = createAllocation(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+
+		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+
+		String response = getAllocation(allocationId).andReturn().getResponse().getContentAsString();
+		assertEquals(creationResponse, response);
+	}
+
 	private ResultActions createAllocation(String allocationRequest) throws Exception {
 		MockHttpServletRequestBuilder content = post("/allocation")
 				.content(allocationRequest)
+				.contentType(MediaType.APPLICATION_JSON);
+
+		return mvc.perform(content);
+	}
+
+	private ResultActions getAllocation(long allocationId) throws Exception {
+		MockHttpServletRequestBuilder content = get("/allocation/" + allocationId)
 				.contentType(MediaType.APPLICATION_JSON);
 
 		return mvc.perform(content);
@@ -101,5 +127,4 @@ class AllocatorControllerTest {
 				.as("Credits of account %s should equal %s.", accountId, expectedAmount)
 				.isEqualByComparingTo(expectedAmount);
 	}
-
 }
