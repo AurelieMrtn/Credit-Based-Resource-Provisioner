@@ -143,7 +143,34 @@ class AllocatorControllerTest {
 		verifyCredit("account-id-1", new BigDecimal("5000.00"));
 	}
 
-	// Test cancel RELEASE allocation
+	@Test
+	public void shouldCancelReleaseAllocation() throws Exception {
+		Map<String, String> objectToAllocate = new HashMap<>();
+		objectToAllocate.put("accountId", "account-id-1");
+		objectToAllocate.put("resourceId", "GPU-A100");
+		objectToAllocate.put("side", "ALLOCATE");
+		objectToAllocate.put("quantity", "10.00");
+
+		createAllocation(objectMapper.writeValueAsString(objectToAllocate));
+
+		Map<String, String> objectToRelease = new HashMap<>();
+		objectToRelease.put("accountId", "account-id-1");
+		objectToRelease.put("resourceId", "GPU-A100");
+		objectToRelease.put("side", "RELEASE");
+		objectToRelease.put("quantity", "5.00");
+
+		String creationResponse = createAllocation(objectMapper.writeValueAsString(objectToRelease)).andReturn().getResponse().getContentAsString();
+		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+
+		cancelAllocation(allocationId);
+
+		AllocationEntity allocationEntity = allocationRepository.findById(allocationId).orElse(null);
+		assert allocationEntity != null;
+		Assertions.assertEquals(AllocationStatus.CANCELLED, allocationEntity.getStatus());
+
+		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
+		verifyCredit("account-id-1", new BigDecimal("3000.00"));
+	}
 
 	private ResultActions createAllocation(String allocationRequest) throws Exception {
 		MockHttpServletRequestBuilder content = post("/allocation")
