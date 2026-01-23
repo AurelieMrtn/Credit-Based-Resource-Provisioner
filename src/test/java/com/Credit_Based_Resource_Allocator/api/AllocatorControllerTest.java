@@ -79,7 +79,32 @@ class AllocatorControllerTest {
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
 	}
 
-	// Test create RELEASE allocation
+	@Test
+	public void shouldCreateReleaseAllocationSuccessfully() throws Exception {
+		Map<String, String> objectToAllocate = new HashMap<>();
+		objectToAllocate.put("accountId", "account-id-1");
+		objectToAllocate.put("resourceId", "GPU-A100");
+		objectToAllocate.put("side", "ALLOCATE");
+		objectToAllocate.put("quantity", "10.00");
+
+		createAllocation(objectMapper.writeValueAsString(objectToAllocate));
+
+		Map<String, String> objectToRelease = new HashMap<>();
+		objectToRelease.put("accountId", "account-id-1");
+		objectToRelease.put("resourceId", "GPU-A100");
+		objectToRelease.put("side", "RELEASE");
+		objectToRelease.put("quantity", "5.00");
+
+		createAllocation(objectMapper.writeValueAsString(objectToRelease))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").isNumber())
+				.andExpect(jsonPath("$.status").value("CREATED"))
+				.andExpect(jsonPath("$.accountId").value("account-id-1"))
+				.andExpect(jsonPath("$.resourceId").value("GPU-A100"));
+
+		verifyCredit("account-id-1", new BigDecimal("4000.00"));
+		verifyResources("account-id-1", "GPU-A100", new BigDecimal("5.00"));
+	}
 
 	@Test
 	public void shouldGetAllocationById() throws Exception {
