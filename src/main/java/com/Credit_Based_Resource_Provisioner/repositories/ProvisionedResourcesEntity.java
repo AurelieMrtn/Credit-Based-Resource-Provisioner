@@ -1,4 +1,4 @@
-package com.Credit_Based_Resource_Allocator.repository;
+package com.Credit_Based_Resource_Provisioner.repositories;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -7,18 +7,18 @@ import jakarta.persistence.IdClass;
 import java.math.BigDecimal;
 
 @Entity
-@IdClass(AllocatedResourcesEntityId.class)
-public class AllocatedResourcesEntity {
+@IdClass(ProvisionedResourcesEntityId.class)
+public class ProvisionedResourcesEntity {
     @Id
     private String accountId;
     @Id
     private String resourceId;
     private BigDecimal quantity;
 
-    public AllocatedResourcesEntity() {
+    public ProvisionedResourcesEntity() {
     }
 
-    public AllocatedResourcesEntity(String accountId, String resourceId, BigDecimal quantity) {
+    public ProvisionedResourcesEntity(String accountId, String resourceId, BigDecimal quantity) {
         this.accountId = accountId;
         this.resourceId = resourceId;
         this.quantity = quantity;

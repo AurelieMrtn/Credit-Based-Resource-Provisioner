@@ -1,9 +1,8 @@
-package com.Credit_Based_Resource_Allocator.api;
+package com.Credit_Based_Resource_Provisioner.controllers;
 
-import com.Credit_Based_Resource_Allocator.AllocationStatus;
-import com.Credit_Based_Resource_Allocator.repository.*;
-import com.Credit_Based_Resource_Allocator.service.CostsDataService;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.Credit_Based_Resource_Provisioner.models.ProvisioningStatus;
+import com.Credit_Based_Resource_Provisioner.repositories.*;
+import com.Credit_Based_Resource_Provisioner.services.CostsDataService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,16 +28,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class AllocatorControllerTest {
+class ProvisioningControllerTest {
 
 	@Autowired
-	private AllocationRepository allocationRepository;
+	private ProvisioningRequestRepository provisioningRequestRepository;
 
 	@Autowired
 	private AccountCreditsRepository accountCreditsRepository;
 
 	@Autowired
-	private AllocatedResourcesRepository allocatedResourcesRepository;
+	private ProvisionedResourcesRepository provisionedResourcesRepository;
 
 	@Autowired
 	private CostsDataService costsDataService;
@@ -50,26 +49,26 @@ class AllocatorControllerTest {
 
 	@AfterEach
 	public void tearDown() {
-		allocationRepository.deleteAll();
-		allocatedResourcesRepository.deleteAll();
+		provisioningRequestRepository.deleteAll();
+		provisionedResourcesRepository.deleteAll();
 		accountCreditsRepository.deleteAll();
 	}
 
 	@BeforeEach
 	public void setUp() {
-		AccountCreditsEntity buyingPowerEntity = new AccountCreditsEntity("account-id-1", new BigDecimal("5000.00"));
-		accountCreditsRepository.save(buyingPowerEntity);
+		AccountCreditsEntity accountCredits = new AccountCreditsEntity("account-id-1", new BigDecimal("5000.00"));
+		accountCreditsRepository.save(accountCredits);
 	}
 
 	@Test
-	public void shouldCreateAllocateAllocationSuccessfully() throws Exception {
+	public void shouldCreateAllocateProvisioningRequestSuccessfully() throws Exception {
 		Map<String, String> object = new HashMap<>();
 		object.put("accountId", "account-id-1");
 		object.put("resourceId", "GPU-A100");
 		object.put("side", "ALLOCATE");
 		object.put("quantity", "10.00");
 
-		createAllocation(objectMapper.writeValueAsString(object))
+		createProvisioningRequest(objectMapper.writeValueAsString(object))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -81,14 +80,14 @@ class AllocatorControllerTest {
 	}
 
 	@Test
-	public void shouldCreateReleaseAllocationSuccessfully() throws Exception {
+	public void shouldCreateReleaseProvisioningRequestSuccessfully() throws Exception {
 		Map<String, String> objectToAllocate = new HashMap<>();
 		objectToAllocate.put("accountId", "account-id-1");
 		objectToAllocate.put("resourceId", "GPU-A100");
 		objectToAllocate.put("side", "ALLOCATE");
 		objectToAllocate.put("quantity", "10.00");
 
-		createAllocation(objectMapper.writeValueAsString(objectToAllocate));
+		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
 
 		Map<String, String> objectToRelease = new HashMap<>();
 		objectToRelease.put("accountId", "account-id-1");
@@ -96,7 +95,7 @@ class AllocatorControllerTest {
 		objectToRelease.put("side", "RELEASE");
 		objectToRelease.put("quantity", "5.00");
 
-		createAllocation(objectMapper.writeValueAsString(objectToRelease))
+		createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -115,7 +114,7 @@ class AllocatorControllerTest {
 		object.put("side", "ALLOCATE");
 		object.put("quantity", "100.00");
 
-		createAllocation(objectMapper.writeValueAsString(object))
+		createProvisioningRequest(objectMapper.writeValueAsString(object))
 				.andExpect(status().is(400))
 				.andExpect(result -> assertEquals("Insufficient credit", result.getResolvedException().getMessage()));
 	}
@@ -128,7 +127,7 @@ class AllocatorControllerTest {
 		objectToAllocate.put("side", "ALLOCATE");
 		objectToAllocate.put("quantity", "5.00");
 
-		createAllocation(objectMapper.writeValueAsString(objectToAllocate));
+		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
 
 		Map<String, String> objectToRelease = new HashMap<>();
 		objectToRelease.put("accountId", "account-id-1");
@@ -136,57 +135,57 @@ class AllocatorControllerTest {
 		objectToRelease.put("side", "RELEASE");
 		objectToRelease.put("quantity", "10.00");
 
-		createAllocation(objectMapper.writeValueAsString(objectToRelease))
+		createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease))
 				.andExpect(status().is(400))
 				.andExpect(result -> assertEquals("Insufficient resources", result.getResolvedException().getMessage()));
 	}
 
 	@Test
-	public void shouldGetAllocationById() throws Exception {
+	public void shouldGetProvisioningRequestById() throws Exception {
 		Map<String, String> object = new HashMap<>();
 		object.put("accountId", "account-id-1");
 		object.put("resourceId", "GPU-A100");
 		object.put("side", "ALLOCATE");
 		object.put("quantity", "10.00");
 
-		String creationResponse = createAllocation(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
 
-		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
-		String response = getAllocation(allocationId).andReturn().getResponse().getContentAsString();
+		String response = getProvisioningRequest(provisioningRequestId).andReturn().getResponse().getContentAsString();
 		assertEquals(creationResponse, response);
 	}
 
 	@Test
-	public void shouldCancelAllocateAllocation() throws Exception {
+	public void shouldCancelAllocateProvisioningRequest() throws Exception {
 		Map<String, String> object = new HashMap<>();
 		object.put("accountId", "account-id-1");
 		object.put("resourceId", "GPU-A100");
 		object.put("side", "ALLOCATE");
 		object.put("quantity", "10.00");
 
-		String creationResponse = createAllocation(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
-		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
-		cancelAllocation(allocationId);
+		cancelProvisioningRequest(provisioningRequestId);
 
-		AllocationEntity allocationEntity = allocationRepository.findById(allocationId).orElse(null);
-		assert allocationEntity != null;
-		Assertions.assertEquals(AllocationStatus.CANCELLED, allocationEntity.getStatus());
+		ProvisioningRequestEntity provisioningRequestEntity = provisioningRequestRepository.findById(provisioningRequestId).orElse(null);
+		assert provisioningRequestEntity != null;
+		Assertions.assertEquals(ProvisioningStatus.CANCELLED, provisioningRequestEntity.getStatus());
 
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("0.00"));
 		verifyCredit("account-id-1", new BigDecimal("5000.00"));
 	}
 
 	@Test
-	public void shouldCancelReleaseAllocation() throws Exception {
+	public void shouldCancelReleaseProvisioningRequest() throws Exception {
 		Map<String, String> objectToAllocate = new HashMap<>();
 		objectToAllocate.put("accountId", "account-id-1");
 		objectToAllocate.put("resourceId", "GPU-A100");
 		objectToAllocate.put("side", "ALLOCATE");
 		objectToAllocate.put("quantity", "10.00");
 
-		createAllocation(objectMapper.writeValueAsString(objectToAllocate));
+		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
 
 		Map<String, String> objectToRelease = new HashMap<>();
 		objectToRelease.put("accountId", "account-id-1");
@@ -194,55 +193,55 @@ class AllocatorControllerTest {
 		objectToRelease.put("side", "RELEASE");
 		objectToRelease.put("quantity", "5.00");
 
-		String creationResponse = createAllocation(objectMapper.writeValueAsString(objectToRelease)).andReturn().getResponse().getContentAsString();
-		long allocationId = objectMapper.readTree(creationResponse).get("id").asLong();
+		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease)).andReturn().getResponse().getContentAsString();
+		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
-		cancelAllocation(allocationId);
+		cancelProvisioningRequest(provisioningRequestId);
 
-		AllocationEntity allocationEntity = allocationRepository.findById(allocationId).orElse(null);
-		assert allocationEntity != null;
-		Assertions.assertEquals(AllocationStatus.CANCELLED, allocationEntity.getStatus());
+		ProvisioningRequestEntity provisioningRequestEntity = provisioningRequestRepository.findById(provisioningRequestId).orElse(null);
+		assert provisioningRequestEntity != null;
+		Assertions.assertEquals(ProvisioningStatus.CANCELLED, provisioningRequestEntity.getStatus());
 
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
 		verifyCredit("account-id-1", new BigDecimal("3000.00"));
 	}
 
-	private ResultActions createAllocation(String allocationRequest) throws Exception {
-		MockHttpServletRequestBuilder content = post("/allocation")
-				.content(allocationRequest)
+	private ResultActions createProvisioningRequest(String provisioningRequest) throws Exception {
+		MockHttpServletRequestBuilder content = post("/provisioning")
+				.content(provisioningRequest)
 				.contentType(MediaType.APPLICATION_JSON);
 
 		return mvc.perform(content);
 	}
 
-	private ResultActions cancelAllocation(long allocationId) throws Exception {
-		MockHttpServletRequestBuilder content = put("/allocation/" + allocationId)
+	private ResultActions cancelProvisioningRequest(long id) throws Exception {
+		MockHttpServletRequestBuilder content = put("/provisioning/" + id)
 				.contentType(MediaType.APPLICATION_JSON);
 
 		return mvc.perform(content);
 	}
 
-	private ResultActions getAllocation(long allocationId) throws Exception {
-		MockHttpServletRequestBuilder content = get("/allocation/" + allocationId)
+	private ResultActions getProvisioningRequest(long id) throws Exception {
+		MockHttpServletRequestBuilder content = get("/provisioning/" + id)
 				.contentType(MediaType.APPLICATION_JSON);
 
 		return mvc.perform(content);
 	}
 
 	private void verifyResources(String accountId, String resourceId, BigDecimal expectedQuantity) {
-		AllocatedResourcesEntity allocatedResourcesEntity = allocatedResourcesRepository
-				.findById(new AllocatedResourcesEntityId(accountId, resourceId))
-				.orElse(new AllocatedResourcesEntity(accountId, resourceId, BigDecimal.ZERO));
-		assertThat(allocatedResourcesEntity.getQuantity())
-				.as("Allocated resources of account %s and resourceId %s, should be %s.", accountId, resourceId, expectedQuantity)
+		ProvisionedResourcesEntity provisionedResourcesEntity = provisionedResourcesRepository
+				.findById(new ProvisionedResourcesEntityId(accountId, resourceId))
+				.orElse(new ProvisionedResourcesEntity(accountId, resourceId, BigDecimal.ZERO));
+		assertThat(provisionedResourcesEntity.getQuantity())
+				.as("Provisioned resources of account %s and resourceId %s, should be %s.", accountId, resourceId, expectedQuantity)
 				.isEqualByComparingTo(expectedQuantity);
 	}
 
 	private void verifyCredit(String accountId, BigDecimal expectedAmount) {
-		AccountCreditsEntity buyingPowerEntity = accountCreditsRepository
+		AccountCreditsEntity accountCredits = accountCreditsRepository
 				.findById(accountId)
 				.orElse(new AccountCreditsEntity(accountId, BigDecimal.ZERO));
-		assertThat(buyingPowerEntity.getAmount())
+		assertThat(accountCredits.getAmount())
 				.as("Credits of account %s should equal %s.", accountId, expectedAmount)
 				.isEqualByComparingTo(expectedAmount);
 	}

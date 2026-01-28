@@ -1,8 +1,8 @@
-package com.Credit_Based_Resource_Allocator.repository;
+package com.Credit_Based_Resource_Provisioner.repositories;
 
 
-import com.Credit_Based_Resource_Allocator.AllocationStatus;
-import com.Credit_Based_Resource_Allocator.AllocationSide;
+import com.Credit_Based_Resource_Provisioner.models.ProvisioningStatus;
+import com.Credit_Based_Resource_Provisioner.models.ProvisioningAction;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -10,19 +10,19 @@ import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
 @Entity
-public class AllocationEntity {
+public class ProvisioningRequestEntity {
     @Id
     @GeneratedValue
     private Long id;
 
     private String accountId;
     private String resourceId;
-    private AllocationStatus status;
-    private AllocationSide side;
+    private ProvisioningStatus status;
+    private ProvisioningAction side;
     private BigDecimal quantity;
     private BigDecimal cost;
 
-    public AllocationEntity(String accountId, String resourceId, AllocationStatus status, AllocationSide side, BigDecimal quantity, BigDecimal cost) {
+    public ProvisioningRequestEntity(String accountId, String resourceId, ProvisioningStatus status, ProvisioningAction side, BigDecimal quantity, BigDecimal cost) {
         this.accountId = accountId;
         this.resourceId = resourceId;
         this.status = status;
@@ -31,7 +31,7 @@ public class AllocationEntity {
         this.cost = cost;
     }
 
-    public AllocationEntity() {
+    public ProvisioningRequestEntity() {
     }
 
     public Long getId() {
@@ -44,15 +44,15 @@ public class AllocationEntity {
         return resourceId;
     }
 
-    public AllocationStatus getStatus() {
+    public ProvisioningStatus getStatus() {
         return status;
     }
 
-    public void setStatus(AllocationStatus status) {
+    public void setStatus(ProvisioningStatus status) {
         this.status = status;
     }
 
-    public AllocationSide getSide() {
+    public ProvisioningAction getSide() {
         return side;
     }
 

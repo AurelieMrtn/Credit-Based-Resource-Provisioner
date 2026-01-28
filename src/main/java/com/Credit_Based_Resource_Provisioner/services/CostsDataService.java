@@ -1,4 +1,4 @@
-package com.Credit_Based_Resource_Allocator.service;
+package com.Credit_Based_Resource_Provisioner.services;
 
 import org.springframework.stereotype.Service;
 

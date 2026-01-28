@@ -1,4 +1,4 @@
-package com.Credit_Based_Resource_Allocator.repository;
+package com.Credit_Based_Resource_Provisioner.repositories;
 
 import org.springframework.data.repository.CrudRepository;
 

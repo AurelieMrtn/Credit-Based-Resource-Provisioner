@@ -8,11 +8,11 @@
 		<version>3.0.6</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.Credit-Based-Resource-Allocator</groupId>
-	<artifactId>credit-based-resource-allocator</artifactId>
+	<groupId>com.Credit-Based-Resource-Provisioner</groupId>
+	<artifactId>credit-based-resource-Provisioner</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Credit-Based-Resource-Allocator</name>
-	<description>credit-based-resource-allocator</description>
+	<name>Credit-Based-Resource-Provisioner</name>
+	<description>credit-based-resource-Provisioner</description>
 	<url/>
 	<licenses>
 		<license/>

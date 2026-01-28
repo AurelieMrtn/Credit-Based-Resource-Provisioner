@@ -1,4 +1,4 @@
-package com.Credit_Based_Resource_Allocator.exception;
+package com.Credit_Based_Resource_Provisioner.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +22,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
-    @ExceptionHandler(AllocationNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFoundException(AllocationNotFoundException ex) {
+    @ExceptionHandler(ProvisioningRequestNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFoundException(ProvisioningRequestNotFoundException ex) {
         Map<String, Object> error = new HashMap<>();
         error.put("status", 404);
         error.put("message", ex.getMessage());
