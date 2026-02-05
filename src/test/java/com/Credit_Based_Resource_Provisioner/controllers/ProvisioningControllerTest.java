@@ -63,13 +63,7 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCreateAllocateProvisioningRequestSuccessfully() throws Exception {
-		Map<String, String> object = new HashMap<>();
-		object.put("accountId", "account-id-1");
-		object.put("resourceId", "GPU-A100");
-		object.put("side", "ALLOCATE");
-		object.put("quantity", "10.00");
-
-		createProvisioningRequest(objectMapper.writeValueAsString(object))
+		createProvisioningRequest(allocateRequest("10.00"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -82,21 +76,9 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCreateReleaseProvisioningRequestSuccessfully() throws Exception {
-		Map<String, String> objectToAllocate = new HashMap<>();
-		objectToAllocate.put("accountId", "account-id-1");
-		objectToAllocate.put("resourceId", "GPU-A100");
-		objectToAllocate.put("side", "ALLOCATE");
-		objectToAllocate.put("quantity", "10.00");
+		createProvisioningRequest(allocateRequest("10.00"));
 
-		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
-
-		Map<String, String> objectToRelease = new HashMap<>();
-		objectToRelease.put("accountId", "account-id-1");
-		objectToRelease.put("resourceId", "GPU-A100");
-		objectToRelease.put("side", "RELEASE");
-		objectToRelease.put("quantity", "5.00");
-
-		createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease))
+		createProvisioningRequest(releaseRequest("5.00"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -109,47 +91,23 @@ class ProvisioningControllerTest {
 
     @Test
 	public void shouldThrowBusinessExceptionWhenInsufficientCreditsToAllocate() throws Exception {
-		Map<String, String> object = new HashMap<>();
-		object.put("accountId", "account-id-1");
-		object.put("resourceId", "GPU-A100");
-		object.put("side", "ALLOCATE");
-		object.put("quantity", "100.00");
-
-		createProvisioningRequest(objectMapper.writeValueAsString(object))
+		createProvisioningRequest(allocateRequest("100.00"))
 				.andExpect(status().is(400))
 				.andExpect(result -> assertEquals("Insufficient credit", result.getResolvedException().getMessage()));
 	}
 
 	@Test
 	public void shouldThrowBusinessExceptionWhenInsufficientQuantityToRelease() throws Exception {
-		Map<String, String> objectToAllocate = new HashMap<>();
-		objectToAllocate.put("accountId", "account-id-1");
-		objectToAllocate.put("resourceId", "GPU-A100");
-		objectToAllocate.put("side", "ALLOCATE");
-		objectToAllocate.put("quantity", "5.00");
+		createProvisioningRequest(allocateRequest("5.00"));
 
-		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
-
-		Map<String, String> objectToRelease = new HashMap<>();
-		objectToRelease.put("accountId", "account-id-1");
-		objectToRelease.put("resourceId", "GPU-A100");
-		objectToRelease.put("side", "RELEASE");
-		objectToRelease.put("quantity", "10.00");
-
-		createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease))
+		createProvisioningRequest(releaseRequest("10.00"))
 				.andExpect(status().is(400))
 				.andExpect(result -> assertEquals("Insufficient resources", result.getResolvedException().getMessage()));
 	}
 
 	@Test
 	public void shouldGetProvisioningRequestById() throws Exception {
-		Map<String, String> object = new HashMap<>();
-		object.put("accountId", "account-id-1");
-		object.put("resourceId", "GPU-A100");
-		object.put("side", "ALLOCATE");
-		object.put("quantity", "10.00");
-
-		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+		String creationResponse = createProvisioningRequest(allocateRequest("10.00")).andReturn().getResponse().getContentAsString();
 
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
@@ -159,13 +117,7 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCancelAllocateProvisioningRequest() throws Exception {
-		Map<String, String> object = new HashMap<>();
-		object.put("accountId", "account-id-1");
-		object.put("resourceId", "GPU-A100");
-		object.put("side", "ALLOCATE");
-		object.put("quantity", "10.00");
-
-		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(object)).andReturn().getResponse().getContentAsString();
+		String creationResponse = createProvisioningRequest(allocateRequest("10.00")).andReturn().getResponse().getContentAsString();
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
 		cancelProvisioningRequest(provisioningRequestId);
@@ -180,21 +132,9 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCancelReleaseProvisioningRequest() throws Exception {
-		Map<String, String> objectToAllocate = new HashMap<>();
-		objectToAllocate.put("accountId", "account-id-1");
-		objectToAllocate.put("resourceId", "GPU-A100");
-		objectToAllocate.put("side", "ALLOCATE");
-		objectToAllocate.put("quantity", "10.00");
+		createProvisioningRequest(allocateRequest("10.00"));
 
-		createProvisioningRequest(objectMapper.writeValueAsString(objectToAllocate));
-
-		Map<String, String> objectToRelease = new HashMap<>();
-		objectToRelease.put("accountId", "account-id-1");
-		objectToRelease.put("resourceId", "GPU-A100");
-		objectToRelease.put("side", "RELEASE");
-		objectToRelease.put("quantity", "5.00");
-
-		String creationResponse = createProvisioningRequest(objectMapper.writeValueAsString(objectToRelease)).andReturn().getResponse().getContentAsString();
+		String creationResponse = createProvisioningRequest(releaseRequest("5.00")).andReturn().getResponse().getContentAsString();
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
 		cancelProvisioningRequest(provisioningRequestId);
@@ -263,5 +203,4 @@ class ProvisioningControllerTest {
 		object.put("quantity", quantity);
 		return objectMapper.writeValueAsString(object);
 	}
-
 }
