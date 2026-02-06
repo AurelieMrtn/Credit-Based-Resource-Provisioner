@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +64,7 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCreateAllocateProvisioningRequestSuccessfully() throws Exception {
-		createProvisioningRequest(allocateRequest("10.00"))
+		allocate("10.00")
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -76,9 +77,9 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCreateReleaseProvisioningRequestSuccessfully() throws Exception {
-		createProvisioningRequest(allocateRequest("10.00"));
+		allocate("10.00");
 
-		createProvisioningRequest(releaseRequest("5.00"))
+		release("5.00")
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").isNumber())
 				.andExpect(jsonPath("$.status").value("CREATED"))
@@ -91,23 +92,23 @@ class ProvisioningControllerTest {
 
     @Test
 	public void shouldThrowBusinessExceptionWhenInsufficientCreditsToAllocate() throws Exception {
-		createProvisioningRequest(allocateRequest("100.00"))
+		allocate("100.00")
 				.andExpect(status().is(400))
-				.andExpect(result -> assertEquals("Insufficient credit", result.getResolvedException().getMessage()));
+				.andExpect(result -> assertEquals("Insufficient credit", Objects.requireNonNull(result.getResolvedException()).getMessage()));
 	}
 
 	@Test
 	public void shouldThrowBusinessExceptionWhenInsufficientQuantityToRelease() throws Exception {
-		createProvisioningRequest(allocateRequest("5.00"));
+		allocate("5.00");
 
-		createProvisioningRequest(releaseRequest("10.00"))
+		release("10.00")
 				.andExpect(status().is(400))
-				.andExpect(result -> assertEquals("Insufficient resources", result.getResolvedException().getMessage()));
+				.andExpect(result -> assertEquals("Insufficient resources", Objects.requireNonNull(result.getResolvedException()).getMessage()));
 	}
 
 	@Test
 	public void shouldGetProvisioningRequestById() throws Exception {
-		String creationResponse = createProvisioningRequest(allocateRequest("10.00")).andReturn().getResponse().getContentAsString();
+		String creationResponse = allocate("10.00").andReturn().getResponse().getContentAsString();
 
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
@@ -117,7 +118,7 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCancelAllocateProvisioningRequest() throws Exception {
-		String creationResponse = createProvisioningRequest(allocateRequest("10.00")).andReturn().getResponse().getContentAsString();
+		String creationResponse = allocate("10.00").andReturn().getResponse().getContentAsString();
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
 		cancelProvisioningRequest(provisioningRequestId);
@@ -132,9 +133,9 @@ class ProvisioningControllerTest {
 
 	@Test
 	public void shouldCancelReleaseProvisioningRequest() throws Exception {
-		createProvisioningRequest(allocateRequest("10.00"));
+		allocate("10.00");
 
-		String creationResponse = createProvisioningRequest(releaseRequest("5.00")).andReturn().getResponse().getContentAsString();
+		String creationResponse = release("5.00").andReturn().getResponse().getContentAsString();
 		long provisioningRequestId = objectMapper.readTree(creationResponse).get("id").asLong();
 
 		cancelProvisioningRequest(provisioningRequestId);
@@ -145,6 +146,14 @@ class ProvisioningControllerTest {
 
 		verifyResources("account-id-1", "GPU-A100", new BigDecimal("10.00"));
 		verifyCredit("account-id-1", new BigDecimal("3000.00"));
+	}
+
+	private ResultActions allocate(String quantity) throws Exception {
+		return createProvisioningRequest(allocateRequest(quantity));
+	}
+
+	private ResultActions release(String quantity) throws Exception {
+		return createProvisioningRequest(releaseRequest(quantity));
 	}
 
 	private ResultActions createProvisioningRequest(String provisioningRequest) throws Exception {
